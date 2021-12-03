@@ -34,7 +34,6 @@ resource "aws_ses_receipt_rule" "default" {
   }
 
   depends_on = [
-    aws_lambda_permission.allow_ses,
     module.lambda,
     module.s3_bucket,
   ]
