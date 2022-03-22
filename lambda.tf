@@ -71,6 +71,6 @@ resource "aws_lambda_permission" "allow_ses" {
   action         = "lambda:InvokeFunction"
   function_name  = module.lambda.name
   principal      = "ses.amazonaws.com"
-  source_arn     = aws_ses_receipt_rule.default.arn
+  source_arn     = "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:receipt-rule-set/${aws_ses_receipt_rule_set.default.rule_set_name}:receipt-rule/*"
   source_account = data.aws_caller_identity.current.account_id
 }
