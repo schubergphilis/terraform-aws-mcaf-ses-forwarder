@@ -21,7 +21,7 @@ data "aws_iam_policy_document" "logs_bucket" {
 module "s3_bucket" {
   source         = "github.com/schubergphilis/terraform-aws-mcaf-s3?ref=v0.3.0"
   name           = var.bucket_name
-  kms_key_id     = var.kms_key_id
+  kms_key_id     = var.kms_key_arn
   lifecycle_rule = var.bucket_lifecycle_rules
   policy         = data.aws_iam_policy_document.logs_bucket.json
   tags           = var.tags
