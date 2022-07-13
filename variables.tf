@@ -35,7 +35,7 @@ variable "from_email" {
   description = "Forwarded emails will come from this verified address"
 }
 
-variable "kms_key_id" {
+variable "kms_key_arn" {
   type        = string
   default     = null
   description = "KMS key ARN used for encryption"
