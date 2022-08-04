@@ -53,7 +53,7 @@ data "archive_file" "lambda" {
 
 module "lambda" {
   providers        = { aws.lambda = aws.lambda }
-  source           = "github.com/schubergphilis/terraform-aws-mcaf-lambda?ref=v0.1.27"
+  source           = "github.com/schubergphilis/terraform-aws-mcaf-lambda?ref=v0.3.3"
   name             = var.lambda_name
   description      = "Forwards email sent to recipients in the \"${var.ses_rule_set_name}\" SES Rule Set to external addresses"
   filename         = data.archive_file.lambda.output_path

@@ -59,21 +59,22 @@ module "ses-forwarder" {
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.9.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | <a name="provider_archive"></a> [archive](#provider\_archive) | n/a |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.9.0 |
 | <a name="provider_template"></a> [template](#provider\_template) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/schubergphilis/terraform-aws-mcaf-lambda | v0.1.27 |
-| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | github.com/schubergphilis/terraform-aws-mcaf-s3 | v0.3.0 |
+| <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/schubergphilis/terraform-aws-mcaf-lambda | v0.3.3 |
+| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | github.com/schubergphilis/terraform-aws-mcaf-s3 | v0.6.0 |
 
 ## Resources
 
