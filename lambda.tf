@@ -1,4 +1,6 @@
 locals {
+  kms_key_arn_provided = var.kms_key_arn != null ? ["allow_kms"] : []
+
   lambda_vars = {
     allow_plus_sign   = var.allow_plus_sign
     bucket_name       = var.bucket_name
@@ -11,6 +13,7 @@ locals {
 
 data "aws_iam_policy_document" "lambda_policy" {
   statement {
+    sid = "AllowLogManagement"
     actions = [
       "logs:CreateLogStream",
       "logs:CreateLogGroup",
@@ -23,6 +26,7 @@ data "aws_iam_policy_document" "lambda_policy" {
   }
 
   statement {
+    sid = "AllowBucketAccessAndSendingEmail"
     actions = [
       "s3:GetObject",
       "s3:PutObject",
@@ -33,6 +37,22 @@ data "aws_iam_policy_document" "lambda_policy" {
       "arn:aws:s3:::${var.bucket_name}/*",
       "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:identity/*",
     ]
+  }
+
+  dynamic "statement" {
+    for_each = local.kms_key_arn_provided
+
+    content {
+      sid = "AllowKMSDecrypt"
+      actions = [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
+      ]
+
+      resources = [
+        var.kms_key_arn
+      ]
+    }
   }
 }
 
