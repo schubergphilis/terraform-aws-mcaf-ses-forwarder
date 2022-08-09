@@ -74,7 +74,7 @@ module "ses-forwarder" {
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/schubergphilis/terraform-aws-mcaf-lambda | v0.3.3 |
-| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | github.com/schubergphilis/terraform-aws-mcaf-s3 | v0.6.0 |
+| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | github.com/schubergphilis/terraform-aws-mcaf-s3 | v0.6.1 |
 
 ## Resources
 
