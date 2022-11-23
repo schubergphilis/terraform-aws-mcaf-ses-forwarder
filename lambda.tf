@@ -56,17 +56,12 @@ data "aws_iam_policy_document" "lambda_policy" {
   }
 }
 
-data "template_file" "index_json" {
-  template = file("${path.module}/lambda/index.js.tpl")
-  vars     = local.lambda_vars
-}
-
 data "archive_file" "lambda" {
   type        = "zip"
   output_path = "${path.module}/lambda.zip"
 
   source {
-    content  = data.template_file.index_json.rendered
+    content  = templatefile("${path.module}/lambda/index.js.tftpl", local.lambda_vars)
     filename = "index.js"
   }
 }
