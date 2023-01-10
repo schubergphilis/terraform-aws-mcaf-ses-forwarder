@@ -72,8 +72,8 @@ module "ses-forwarder" {
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/schubergphilis/terraform-aws-mcaf-lambda | v0.3.3 |
-| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | github.com/schubergphilis/terraform-aws-mcaf-s3 | v0.6.1 |
+| <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/schubergphilis/terraform-aws-mcaf-lambda | v0.3.6 |
+| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | github.com/schubergphilis/terraform-aws-mcaf-s3 | v0.7.0 |
 
 ## Resources
 
@@ -98,7 +98,7 @@ module "ses-forwarder" {
 | <a name="input_recipient_mapping"></a> [recipient\_mapping](#input\_recipient\_mapping) | Map of recipients and the addresses to forward on to | `map(any)` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to set on Terraform created resources | `map(string)` | n/a | yes |
 | <a name="input_allow_plus_sign"></a> [allow\_plus\_sign](#input\_allow\_plus\_sign) | Enables support for plus sign suffixes on email addresses | `bool` | `true` | no |
-| <a name="input_bucket_lifecycle_rules"></a> [bucket\_lifecycle\_rules](#input\_bucket\_lifecycle\_rules) | S3 bucket lifecycle rules | `list(any)` | <pre>[<br>  {<br>    "enabled": true,<br>    "expiration": {<br>      "days": 14<br>    },<br>    "id": "two-week-retention"<br>  }<br>]</pre> | no |
+| <a name="input_bucket_lifecycle_rules"></a> [bucket\_lifecycle\_rules](#input\_bucket\_lifecycle\_rules) | S3 bucket lifecycle rules | `list(any)` | <pre>[<br>  {<br>    "enabled": true,<br>    "expiration": {<br>      "days": 14<br>    },<br>    "id": "two-week-retention",<br>    "noncurrent_version_expiration": {<br>      "noncurrent_days": 14<br>    }<br>  }<br>]</pre> | no |
 | <a name="input_bucket_prefix"></a> [bucket\_prefix](#input\_bucket\_prefix) | S3 key name prefix where SES stores email | `string` | `"inbound-mail"` | no |
 | <a name="input_kms_key_arn"></a> [kms\_key\_arn](#input\_kms\_key\_arn) | KMS key ARN used for encryption | `string` | `null` | no |
 | <a name="input_lambda_name"></a> [lambda\_name](#input\_lambda\_name) | The name of the Lambda function | `string` | `"EmailForwarder"` | no |
