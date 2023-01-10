@@ -21,7 +21,7 @@ data "aws_iam_policy_document" "lambda_policy" {
     ]
 
     resources = [
-      "*",
+      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda_name}:*",
     ]
   }
 
@@ -68,7 +68,7 @@ data "archive_file" "lambda" {
 
 module "lambda" {
   providers        = { aws.lambda = aws.lambda }
-  source           = "github.com/schubergphilis/terraform-aws-mcaf-lambda?ref=v0.3.3"
+  source           = "github.com/schubergphilis/terraform-aws-mcaf-lambda?ref=v0.3.6"
   name             = var.lambda_name
   description      = "Forwards email sent to recipients in the \"${var.ses_rule_set_name}\" SES Rule Set to external addresses"
   filename         = data.archive_file.lambda.output_path
