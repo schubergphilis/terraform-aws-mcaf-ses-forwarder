@@ -14,6 +14,10 @@ variable "bucket_lifecycle_rules" {
       expiration = {
         days = 14
       }
+
+      noncurrent_version_expiration = {
+        noncurrent_days = 14
+      }
     }
   ]
   description = "S3 bucket lifecycle rules"
