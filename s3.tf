@@ -19,6 +19,8 @@ data "aws_iam_policy_document" "logs_bucket" {
 }
 
 module "s3_bucket" {
+  #checkov:skip=CKV_AWS_19: False positive: https://github.com/bridgecrewio/checkov/issues/3847. The S3 bucket created by this module supports encryption with KMS. 
+  #checkov:skip=CKV_AWS_145: False positive: https://github.com/bridgecrewio/checkov/issues/3847. The S3 bucket created by this module support encryption with KMS.
   source         = "github.com/schubergphilis/terraform-aws-mcaf-s3?ref=v0.7.0"
   name           = var.bucket_name
   kms_key_arn    = var.kms_key_arn

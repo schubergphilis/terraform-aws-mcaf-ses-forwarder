@@ -67,12 +67,14 @@ data "archive_file" "lambda" {
 }
 
 module "lambda" {
+  #checkov:skip=CKV_AWS_272: This module does not provide support for code-signing
   providers        = { aws.lambda = aws.lambda }
   source           = "github.com/schubergphilis/terraform-aws-mcaf-lambda?ref=v0.3.6"
   name             = var.lambda_name
   description      = "Forwards email sent to recipients in the \"${var.ses_rule_set_name}\" SES Rule Set to external addresses"
   filename         = data.archive_file.lambda.output_path
   handler          = "index.handler"
+  kms_key_arn      = var.kms_key_arn
   memory_size      = 256
   policy           = data.aws_iam_policy_document.lambda_policy.json
   runtime          = "nodejs14.x"
