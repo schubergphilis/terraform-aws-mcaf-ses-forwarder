@@ -67,18 +67,21 @@ data "archive_file" "lambda" {
 }
 
 module "lambda" {
-  providers        = { aws.lambda = aws.lambda }
-  source           = "github.com/schubergphilis/terraform-aws-mcaf-lambda?ref=v0.3.6"
-  name             = var.lambda_name
+  #checkov:skip=CKV_AWS_272: This module does not provide support for code-signing
+  providers = { aws.lambda = aws.lambda }
+  source    = "github.com/schubergphilis/terraform-aws-mcaf-lambda?ref=v0.3.10"
+
   description      = "Forwards email sent to recipients in the \"${var.ses_rule_set_name}\" SES Rule Set to external addresses"
   filename         = data.archive_file.lambda.output_path
   handler          = "index.handler"
+  kms_key_arn      = var.kms_key_arn
   memory_size      = 256
+  name             = var.lambda_name
   policy           = data.aws_iam_policy_document.lambda_policy.json
   runtime          = "nodejs14.x"
   source_code_hash = data.archive_file.lambda.output_base64sha256
-  timeout          = 30
   tags             = var.tags
+  timeout          = 30
 }
 
 resource "aws_lambda_permission" "allow_ses" {
