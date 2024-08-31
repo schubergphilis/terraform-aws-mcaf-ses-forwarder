@@ -53,6 +53,17 @@ module "ses-forwarder" {
 }
 ```
 
+To match all email addresses on a domain, use a key without the name part of an email address before the "at" symbol:
+
+```terraform
+module "ses-forwarder" {
+  ...
+  recipient_mapping = {
+    "@app.dev" = ["user1@company.io", "user2@company.io"]
+  }
+}
+```
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
