@@ -3,9 +3,8 @@ terraform {
 
   required_providers {
     aws = {
-      configuration_aliases = [aws, aws.lambda]
-      source                = "hashicorp/aws"
-      version               = ">= 4.9.0"
+      source  = "hashicorp/aws"
+      version = ">= 4.9.0"
     }
     archive = {
       source  = "hashicorp/archive"
