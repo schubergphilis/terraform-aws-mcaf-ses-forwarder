@@ -53,7 +53,7 @@ module "ses-forwarder" {
 }
 ```
 
-<!--- BEGIN_TF_DOCS --->
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
@@ -72,8 +72,8 @@ module "ses-forwarder" {
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/schubergphilis/terraform-aws-mcaf-lambda | v0.3.6 |
-| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | github.com/schubergphilis/terraform-aws-mcaf-s3 | v0.7.0 |
+| <a name="module_lambda"></a> [lambda](#module\_lambda) | github.com/schubergphilis/terraform-aws-mcaf-lambda | v0.3.10 |
+| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | schubergphilis/mcaf-s3/aws | 0.9.1 |
 
 ## Resources
 
@@ -96,7 +96,6 @@ module "ses-forwarder" {
 | <a name="input_bucket_name"></a> [bucket\_name](#input\_bucket\_name) | S3 bucket name where SES stores emails | `string` | n/a | yes |
 | <a name="input_from_email"></a> [from\_email](#input\_from\_email) | Forwarded emails will come from this verified address | `string` | n/a | yes |
 | <a name="input_recipient_mapping"></a> [recipient\_mapping](#input\_recipient\_mapping) | Map of recipients and the addresses to forward on to | `map(any)` | n/a | yes |
-| <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to set on Terraform created resources | `map(string)` | n/a | yes |
 | <a name="input_allow_plus_sign"></a> [allow\_plus\_sign](#input\_allow\_plus\_sign) | Enables support for plus sign suffixes on email addresses | `bool` | `true` | no |
 | <a name="input_bucket_lifecycle_rules"></a> [bucket\_lifecycle\_rules](#input\_bucket\_lifecycle\_rules) | S3 bucket lifecycle rules | `list(any)` | <pre>[<br>  {<br>    "enabled": true,<br>    "expiration": {<br>      "days": 14<br>    },<br>    "id": "two-week-retention",<br>    "noncurrent_version_expiration": {<br>      "noncurrent_days": 14<br>    }<br>  }<br>]</pre> | no |
 | <a name="input_bucket_prefix"></a> [bucket\_prefix](#input\_bucket\_prefix) | S3 key name prefix where SES stores email | `string` | `"inbound-mail"` | no |
@@ -105,9 +104,9 @@ module "ses-forwarder" {
 | <a name="input_ses_rule_name"></a> [ses\_rule\_name](#input\_ses\_rule\_name) | The name of the SES rule that invokes the Lambda function | `string` | `"EmailForwarder"` | no |
 | <a name="input_ses_rule_set_name"></a> [ses\_rule\_set\_name](#input\_ses\_rule\_set\_name) | The name of the active Rule Set in SES which you have already configured | `string` | `"EmailForwarder"` | no |
 | <a name="input_subject_prefix"></a> [subject\_prefix](#input\_subject\_prefix) | String to prepend to the subject of forwarded mail | `string` | `""` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to set on Terraform created resources | `map(string)` | `null` | no |
 
 ## Outputs
 
 No outputs.
-
-<!--- END_TF_DOCS --->
+<!-- END_TF_DOCS -->
