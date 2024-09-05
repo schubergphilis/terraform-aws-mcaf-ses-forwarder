@@ -76,5 +76,6 @@ variable "subject_prefix" {
 
 variable "tags" {
   type        = map(string)
+  default     = null
   description = "Map of tags to set on Terraform created resources"
 }
