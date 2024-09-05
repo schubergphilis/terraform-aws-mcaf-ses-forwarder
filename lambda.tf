@@ -78,7 +78,7 @@ module "lambda" {
   memory_size      = 256
   name             = var.lambda_name
   policy           = data.aws_iam_policy_document.lambda_policy.json
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs18.x"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   tags             = var.tags
   timeout          = 30
