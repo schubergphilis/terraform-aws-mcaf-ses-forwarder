@@ -2,7 +2,7 @@
 
 var AWS = require('aws-sdk');
 
-console.log("AWS Lambda SES Forwarder // @arithmetric // Version 5.0.0");
+console.log("AWS Lambda SES Forwarder // @arithmetric // Version 5.1.0");
 
 // Configure the S3 bucket and key prefix for stored raw emails, and the
 // mapping of email addresses to forward from and to.
@@ -51,7 +51,7 @@ var defaultConfig = {
  *
  * @return {object} - Promise resolved with data.
  */
-exports.parseEvent = function(data) {
+exports.parseEvent = function (data) {
   // Validate characteristics of a SES event record.
   if (!data.event ||
       !data.event.hasOwnProperty('Records') ||
@@ -78,10 +78,10 @@ exports.parseEvent = function(data) {
  *
  * @return {object} - Promise resolved with data.
  */
-exports.transformRecipients = function(data) {
+exports.transformRecipients = function (data) {
   var newRecipients = [];
   data.originalRecipients = data.recipients;
-  data.recipients.forEach(function(origEmail) {
+  data.recipients.forEach(function (origEmail) {
     var origEmailKey = origEmail.toLowerCase();
     if (data.config.allowPlusSign) {
       origEmailKey = origEmailKey.replace(/\+.*?@/, '@');
@@ -138,14 +138,14 @@ exports.transformRecipients = function(data) {
  *
  * @return {object} - Promise resolved with data.
  */
-exports.fetchMessage = function(data) {
+exports.fetchMessage = function (data) {
   // Copying email object to ensure read permission
   data.log({
     level: "info",
     message: "Fetching email at s3://" + data.config.emailBucket + '/' +
       data.config.emailKeyPrefix + data.email.messageId
   });
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     data.s3.copyObject({
       Bucket: data.config.emailBucket,
       CopySource: data.config.emailBucket + '/' + data.config.emailKeyPrefix +
@@ -154,7 +154,7 @@ exports.fetchMessage = function(data) {
       ACL: 'private',
       ContentType: 'text/plain',
       StorageClass: 'STANDARD'
-    }, function(err) {
+    }, function (err) {
       if (err) {
         data.log({
           level: "error",
@@ -170,7 +170,7 @@ exports.fetchMessage = function(data) {
       data.s3.getObject({
         Bucket: data.config.emailBucket,
         Key: data.config.emailKeyPrefix + data.email.messageId
-      }, function(err, result) {
+      }, function (err, result) {
         if (err) {
           data.log({
             level: "error",
@@ -196,7 +196,7 @@ exports.fetchMessage = function(data) {
  *
  * @return {object} - Promise resolved with data.
  */
-exports.processMessage = function(data) {
+exports.processMessage = function (data) {
   var match = data.emailData.match(/^((?:.+\r?\n)*)(\r?\n(?:.*\s+)*)/m);
   var header = match && match[1] ? match[1] : data.emailData;
   var body = match && match[2] ? match[2] : '';
@@ -225,7 +225,7 @@ exports.processMessage = function(data) {
   // recipient (which is a verified domain)
   header = header.replace(
     /^from:[\t ]?(.*(?:\r?\n\s+.*)*)/mgi,
-    function(match, from) {
+    function (match, from) {
       var fromText;
       if (data.config.fromEmail) {
         fromText = 'From: ' + from.replace(/<(.*)>/, '').trim() +
@@ -241,14 +241,14 @@ exports.processMessage = function(data) {
   if (data.config.subjectPrefix) {
     header = header.replace(
       /^subject:[\t ]?(.*)/mgi,
-      function(match, subject) {
+      function (match, subject) {
         return 'Subject: ' + data.config.subjectPrefix + subject;
       });
   }
 
   // Replace original 'To' header with a manually defined one
   if (data.config.toEmail) {
-    header = header.replace(/^to:[\t ]?(.*)/mgi, () => 'To: ' + data.config.toEmail);
+    header = header.replace(/^to:[\t ]?(.*)/mgi, 'To: ' + data.config.toEmail);
   }
 
   // Remove the Return-Path header.
@@ -277,7 +277,7 @@ exports.processMessage = function(data) {
  *
  * @return {object} - Promise resolved with data.
  */
-exports.sendMessage = function(data) {
+exports.sendMessage = function (data) {
   var params = {
     Destinations: data.recipients,
     Source: data.originalRecipient,
@@ -291,8 +291,8 @@ exports.sendMessage = function(data) {
       data.originalRecipients.join(", ") + ". Transformed recipients: " +
       data.recipients.join(", ") + "."
   });
-  return new Promise(function(resolve, reject) {
-    data.ses.sendRawEmail(params, function(err, result) {
+  return new Promise(function (resolve, reject) {
+    data.ses.sendRawEmail(params, function (err, result) {
       if (err) {
         data.log({
           level: "error",
@@ -322,7 +322,7 @@ exports.sendMessage = function(data) {
  * @param {object} overrides - Overrides for the default data, including the
  * configuration, SES object, and S3 object.
  */
-exports.handler = function(event, context, callback, overrides) {
+exports.handler = function (event, context, callback, overrides) {
   var steps = overrides && overrides.steps ? overrides.steps :
     [
       exports.parseEvent,
@@ -339,17 +339,17 @@ exports.handler = function(event, context, callback, overrides) {
     log: overrides && overrides.log ? overrides.log : console.log,
     ses: overrides && overrides.ses ? overrides.ses : new AWS.SES(),
     s3: overrides && overrides.s3 ?
-      overrides.s3 : new AWS.S3({signatureVersion: 'v4'})
+      overrides.s3 : new AWS.S3({ signatureVersion: 'v4' })
   };
   Promise.series(steps, data)
-    .then(function(data) {
+    .then(function (data) {
       data.log({
         level: "info",
         message: "Process finished successfully."
       });
       return data.callback();
     })
-    .catch(function(err) {
+    .catch(function (err) {
       data.log({
         level: "error",
         message: "Step returned error: " + err.message,
@@ -360,11 +360,12 @@ exports.handler = function(event, context, callback, overrides) {
     });
 };
 
-Promise.series = function(promises, initValue) {
-  return promises.reduce(function(chain, promise) {
+Promise.series = function (promises, initValue) {
+  return promises.reduce(function (chain, promise) {
     if (typeof promise !== 'function') {
-      return Promise.reject(new Error("Error: Invalid promise item: " +
-        promise));
+      return chain.then(() => {
+        throw new Error("Error: Invalid promise item: " + promise);
+      });
     }
     return chain.then(promise);
   }, Promise.resolve(initValue));
