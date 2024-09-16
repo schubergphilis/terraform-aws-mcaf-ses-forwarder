@@ -1,14 +1,5 @@
 locals {
   kms_key_arn_provided = var.kms_key_arn != null ? ["allow_kms"] : []
-
-  lambda_vars = {
-    allow_plus_sign   = var.allow_plus_sign
-    bucket_name       = var.bucket_name
-    bucket_prefix     = local.bucket_prefix
-    from_email        = var.from_email
-    recipient_mapping = jsonencode(var.recipient_mapping)
-    subject_prefix    = var.subject_prefix
-  }
 }
 
 data "aws_iam_policy_document" "lambda_policy" {
@@ -59,11 +50,7 @@ data "aws_iam_policy_document" "lambda_policy" {
 data "archive_file" "lambda" {
   type        = "zip"
   output_path = "${path.module}/lambda.zip"
-
-  source {
-    content  = templatefile("${path.module}/lambda/index.js.tftpl", local.lambda_vars)
-    filename = "index.js"
-  }
+  source_dir  = "${path.module}/lambda/"
 }
 
 module "lambda" {
@@ -78,10 +65,19 @@ module "lambda" {
   memory_size      = 256
   name             = var.lambda_name
   policy           = data.aws_iam_policy_document.lambda_policy.json
-  runtime          = "nodejs18.x"
+  runtime          = "nodejs20.x"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   tags             = var.tags
   timeout          = 30
+
+  environment = {
+    ALLOW_PLUS_SIGN   = var.allow_plus_sign
+    BUCKET_NAME       = var.bucket_name
+    BUCKET_PREFIX     = local.bucket_prefix
+    FROM_EMAIL        = var.from_email
+    RECIPIENT_MAPPING = jsonencode(var.recipient_mapping)
+    SUBJECT_PREFIX    = var.subject_prefix
+  }
 }
 
 resource "aws_lambda_permission" "allow_ses" {
