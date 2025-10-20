@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "lambda_policy" {
     ]
 
     resources = [
-      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda_name}:*",
+      "arn:aws:logs:${local.account_region}:${local.account_id}:log-group:/aws/lambda/${var.lambda_name}:*",
     ]
   }
 
@@ -26,7 +26,7 @@ data "aws_iam_policy_document" "lambda_policy" {
 
     resources = [
       "arn:aws:s3:::${var.bucket_name}/*",
-      "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:identity/*",
+      "arn:aws:ses:${local.account_region}:${local.account_id}:identity/*",
     ]
   }
 
@@ -56,19 +56,23 @@ data "archive_file" "lambda" {
 module "lambda" {
   #checkov:skip=CKV_AWS_272: This module does not provide support for code-signing
   source  = "schubergphilis/mcaf-lambda/aws"
-  version = "~> 1.4.1"
+  version = "~> 3.0.0"
 
+  region           = local.account_region
   description      = "Forwards email sent to recipients in the \"${var.ses_rule_set_name}\" SES Rule Set to external addresses"
   filename         = data.archive_file.lambda.output_path
   handler          = "index.handler"
   kms_key_arn      = var.kms_key_arn
   memory_size      = 256
   name             = var.lambda_name
-  policy           = data.aws_iam_policy_document.lambda_policy.json
   runtime          = "nodejs20.x"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   tags             = var.tags
   timeout          = 30
+
+  execution_role = {
+    policy = data.aws_iam_policy_document.lambda_policy.json
+  }
 
   environment = {
     ALLOW_PLUS_SIGN   = var.allow_plus_sign
@@ -81,10 +85,11 @@ module "lambda" {
 }
 
 resource "aws_lambda_permission" "allow_ses" {
+  region         = local.account_region
   statement_id   = "GiveSESPermissionToInvokeFunction"
   action         = "lambda:InvokeFunction"
   function_name  = module.lambda.name
   principal      = "ses.amazonaws.com"
-  source_arn     = "arn:aws:ses:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:receipt-rule-set/${aws_ses_receipt_rule_set.default.rule_set_name}:receipt-rule/*"
-  source_account = data.aws_caller_identity.current.account_id
+  source_arn     = "arn:aws:ses:${local.account_region}:${local.account_id}:receipt-rule-set/${aws_ses_receipt_rule_set.default.rule_set_name}:receipt-rule/*"
+  source_account = local.account_id
 }

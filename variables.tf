@@ -56,6 +56,12 @@ variable "recipient_mapping" {
   description = "Map of recipients and the addresses to forward on to"
 }
 
+variable "region" {
+  type        = string
+  default     = null
+  description = "The AWS region where the resources will be created. If omitted, the default provider region is used."
+}
+
 variable "ses_rule_name" {
   type        = string
   default     = "EmailForwarder"

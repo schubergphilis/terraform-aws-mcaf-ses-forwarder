@@ -69,23 +69,23 @@ module "ses-forwarder" {
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.4.0 |
 | <a name="requirement_archive"></a> [archive](#requirement\_archive) | >= 2.0.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.9.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | <a name="provider_archive"></a> [archive](#provider\_archive) | >= 2.0.0 |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.9.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0.0 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_lambda"></a> [lambda](#module\_lambda) | schubergphilis/mcaf-lambda/aws | ~> 1.4.1 |
-| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | schubergphilis/mcaf-s3/aws | ~> 0.14.1 |
+| <a name="module_lambda"></a> [lambda](#module\_lambda) | schubergphilis/mcaf-lambda/aws | ~> 3.0.0 |
+| <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | schubergphilis/mcaf-s3/aws | ~> 2.0.0 |
 
 ## Resources
 
@@ -96,10 +96,10 @@ module "ses-forwarder" {
 | [aws_ses_receipt_rule.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ses_receipt_rule) | resource |
 | [aws_ses_receipt_rule_set.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ses_receipt_rule_set) | resource |
 | [archive_file.lambda](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
-| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_caller_identity.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.lambda_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.logs_bucket](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
-| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_region.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
 
@@ -109,10 +109,11 @@ module "ses-forwarder" {
 | <a name="input_from_email"></a> [from\_email](#input\_from\_email) | Forwarded emails will come from this verified address | `string` | n/a | yes |
 | <a name="input_recipient_mapping"></a> [recipient\_mapping](#input\_recipient\_mapping) | Map of recipients and the addresses to forward on to | `map(any)` | n/a | yes |
 | <a name="input_allow_plus_sign"></a> [allow\_plus\_sign](#input\_allow\_plus\_sign) | Enables support for plus sign suffixes on email addresses | `bool` | `true` | no |
-| <a name="input_bucket_lifecycle_rules"></a> [bucket\_lifecycle\_rules](#input\_bucket\_lifecycle\_rules) | S3 bucket lifecycle rules | `list(any)` | <pre>[<br>  {<br>    "enabled": true,<br>    "expiration": {<br>      "days": 14<br>    },<br>    "id": "two-week-retention",<br>    "noncurrent_version_expiration": {<br>      "noncurrent_days": 14<br>    }<br>  }<br>]</pre> | no |
+| <a name="input_bucket_lifecycle_rules"></a> [bucket\_lifecycle\_rules](#input\_bucket\_lifecycle\_rules) | S3 bucket lifecycle rules | `list(any)` | <pre>[<br/>  {<br/>    "enabled": true,<br/>    "expiration": {<br/>      "days": 14<br/>    },<br/>    "id": "two-week-retention",<br/>    "noncurrent_version_expiration": {<br/>      "noncurrent_days": 14<br/>    }<br/>  }<br/>]</pre> | no |
 | <a name="input_bucket_prefix"></a> [bucket\_prefix](#input\_bucket\_prefix) | S3 key name prefix where SES stores email | `string` | `"inbound-mail"` | no |
 | <a name="input_kms_key_arn"></a> [kms\_key\_arn](#input\_kms\_key\_arn) | KMS key ARN used for encryption | `string` | `null` | no |
 | <a name="input_lambda_name"></a> [lambda\_name](#input\_lambda\_name) | The name of the Lambda function | `string` | `"EmailForwarder"` | no |
+| <a name="input_region"></a> [region](#input\_region) | The AWS region where the resources will be created. If omitted, the default provider region is used. | `string` | `null` | no |
 | <a name="input_ses_rule_name"></a> [ses\_rule\_name](#input\_ses\_rule\_name) | The name of the SES rule that invokes the Lambda function | `string` | `"EmailForwarder"` | no |
 | <a name="input_ses_rule_set_name"></a> [ses\_rule\_set\_name](#input\_ses\_rule\_set\_name) | The name of the active Rule Set in SES which you have already configured | `string` | `"EmailForwarder"` | no |
 | <a name="input_subject_prefix"></a> [subject\_prefix](#input\_subject\_prefix) | String to prepend to the subject of forwarded mail | `string` | `""` | no |
