@@ -65,7 +65,7 @@ module "lambda" {
   kms_key_arn      = var.kms_key_arn
   memory_size      = 256
   name             = var.lambda_name
-  runtime          = "nodejs20.x"
+  runtime          = "nodejs24.x"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   tags             = var.tags
   timeout          = 30
