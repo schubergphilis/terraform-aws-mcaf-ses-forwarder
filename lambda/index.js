@@ -1,9 +1,9 @@
 "use strict";
 
-const { S3Client, CopyObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { SESv2Client, SendEmailCommand } = require("@aws-sdk/client-sesv2");
 
-console.log("AWS Lambda SES Forwarder // @arithmetric // Version 5.1.0");
+console.log("AWS Lambda SES Forwarder // based on: @arithmetric // Version 6.0.0");
 
 // Configure the S3 bucket and key prefix for stored raw emails, and the
 // mapping of email addresses to forward from and to.
@@ -55,9 +55,9 @@ var defaultConfig = {
 exports.parseEvent = function (data) {
   // Validate characteristics of a SES event record.
   if (!data.event ||
-    !data.event.hasOwnProperty('Records') ||
+    !Object.hasOwn(data.event, 'Records') ||
     data.event.Records.length !== 1 ||
-    !data.event.Records[0].hasOwnProperty('eventSource') ||
+    !Object.hasOwn(data.event.Records[0], 'eventSource') ||
     data.event.Records[0].eventSource !== 'aws:ses' ||
     data.event.Records[0].eventVersion !== '1.0') {
     data.log({
@@ -87,7 +87,7 @@ exports.transformRecipients = function (data) {
     if (data.config.allowPlusSign) {
       origEmailKey = origEmailKey.replace(/\+.*?@/, '@');
     }
-    if (data.config.forwardMapping.hasOwnProperty(origEmailKey)) {
+    if (Object.hasOwn(data.config.forwardMapping, origEmailKey)) {
       newRecipients = newRecipients.concat(
         data.config.forwardMapping[origEmailKey]);
       data.originalRecipient = origEmail;
@@ -102,16 +102,16 @@ exports.transformRecipients = function (data) {
         origEmailUser = origEmailKey.slice(0, pos);
       }
       if (origEmailDomain &&
-        data.config.forwardMapping.hasOwnProperty(origEmailDomain)) {
+        Object.hasOwn(data.config.forwardMapping, origEmailDomain)) {
         newRecipients = newRecipients.concat(
           data.config.forwardMapping[origEmailDomain]);
         data.originalRecipient = origEmail;
       } else if (origEmailUser &&
-        data.config.forwardMapping.hasOwnProperty(origEmailUser)) {
+        Object.hasOwn(data.config.forwardMapping, origEmailUser)) {
         newRecipients = newRecipients.concat(
           data.config.forwardMapping[origEmailUser]);
         data.originalRecipient = origEmail;
-      } else if (data.config.forwardMapping.hasOwnProperty("@")) {
+      } else if (Object.hasOwn(data.config.forwardMapping, "@")) {
         newRecipients = newRecipients.concat(
           data.config.forwardMapping["@"]);
         data.originalRecipient = origEmail;
@@ -140,49 +140,55 @@ exports.transformRecipients = function (data) {
  * @return {object} - Promise resolved with data.
  */
 exports.fetchMessage = async function (data) {
-  // Copying email object to ensure read permission
+  const maxRetries = 3;
+  const retryDelay = 1000; // 1 second
+
   data.log({
     level: "info",
     message: "Fetching email at s3://" + data.config.emailBucket + '/' +
       data.config.emailKeyPrefix + data.email.messageId
   });
 
-  try {
-    await data.s3.send(new CopyObjectCommand({
-      Bucket: data.config.emailBucket,
-      CopySource: data.config.emailBucket + '/' + data.config.emailKeyPrefix +
-        data.email.messageId,
-      Key: data.config.emailKeyPrefix + data.email.messageId,
-      ACL: 'private',
-      ContentType: 'text/plain',
-      StorageClass: 'STANDARD'
-    }));
-  } catch (err) {
-    data.log({
-      level: "error",
-      message: "CopyObjectCommand() returned error:",
-      error: err,
-      stack: err.stack
-    });
-    throw new Error("Error: Could not make readable copy of email.");
-  }
+  // Load the raw email from S3 with retry logic for race condition
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await data.s3.send(new GetObjectCommand({
+        Bucket: data.config.emailBucket,
+        Key: `${data.config.emailKeyPrefix}${data.email.messageId}`
+      }));
+      data.emailData = await result.Body.transformToString();
 
-  // Load the raw email from S3
-  try {
-    const result = await data.s3.send(new GetObjectCommand({
-      Bucket: data.config.emailBucket,
-      Key: data.config.emailKeyPrefix + data.email.messageId
-    }));
-    data.emailData = await result.Body.transformToString();
-    return data;
-  } catch (err) {
-    data.log({
-      level: "error",
-      message: "GetObjectCommand() returned error:",
-      error: err,
-      stack: err.stack
-    });
-    throw new Error("Error: Failed to load message body from S3.");
+      if (attempt > 1) {
+        data.log({
+          level: "info",
+          message: `Successfully fetched message on attempt ${attempt}`
+        });
+      }
+
+      return data;
+    } catch (err) {
+      const isNotFound = err.name === 'NoSuchKey' || err.$metadata?.httpStatusCode === 404;
+      const isLastAttempt = attempt === maxRetries;
+
+      if (isNotFound && !isLastAttempt) {
+        data.log({
+          level: "warn",
+          message: `Object not found on attempt ${attempt}/${maxRetries}, retrying in ${retryDelay}ms...`
+        });
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        continue;
+      }
+
+      data.log({
+        level: "error",
+        message: "Failed to load message body from S3",
+        error: err.message,
+        errorName: err.name,
+        stack: err.stack,
+        attempts: attempt
+      });
+      throw new Error("Failed to load message body from S3");
+    }
   }
 };
 
@@ -198,6 +204,31 @@ exports.processMessage = function (data) {
   var match = data.emailData.match(/^((?:.+\r?\n)*)(\r?\n(?:.*\s+)*)/m);
   var header = match && match[1] ? match[1] : data.emailData;
   var body = match && match[2] ? match[2] : '';
+
+  // Extract and log metadata for audit trail
+  var fromMatch = header.match(/^from:[\t ]?(.*(?:\r?\n\s+.*)*\r?\n)/mi);
+  var subjectMatch = header.match(/^subject:[\t ]?(.*(?:\r?\n\s+.*)*\r?\n)/mi);
+  var messageIdMatch = header.match(/^message-id:[\t ]?(<.*?>)/mi);
+
+  var originalFrom = fromMatch && fromMatch[1] ? fromMatch[1].replace(/\r?\n\s+/g, ' ').trim() : 'unknown';
+  var originalSubject = subjectMatch && subjectMatch[1] ? subjectMatch[1].replace(/\r?\n\s+/g, ' ').trim() : 'no subject';
+  var originalMessageId = messageIdMatch && messageIdMatch[1] ? messageIdMatch[1] : data.email.messageId;
+
+  data.log({
+    level: "info",
+    message: "Processing email",
+    originalFrom: originalFrom,
+    originalSubject: originalSubject,
+    originalMessageId: originalMessageId,
+    sesMessageId: data.email.messageId
+  });
+
+  // Store metadata for later logging
+  data.emailMetadata = {
+    originalFrom: originalFrom,
+    originalSubject: originalSubject,
+    originalMessageId: originalMessageId
+  };
 
   // Add "Reply-To:" with the "From" address if it doesn't already exists
   if (!/^reply-to:[\t ]?/mi.test(header)) {
@@ -277,32 +308,40 @@ exports.processMessage = function (data) {
  */
 exports.sendMessage = async function (data) {
   var params = {
+    FromEmailAddress: data.config.fromEmail,
     Destination: { ToAddresses: data.recipients },
     Content: { Raw: { Data: Buffer.from(data.emailData) } },
   };
   data.log({
     level: "info",
-    message: "sendMessage: Sending email via SES. Original recipients: " +
-      data.originalRecipients.join(", ") + ". Transformed recipients: " +
-      data.recipients.join(", ") + "."
+    message: "Sending email via SES",
+    originalFrom: data.emailMetadata ? data.emailMetadata.originalFrom : 'unknown',
+    originalSubject: data.emailMetadata ? data.emailMetadata.originalSubject : 'unknown',
+    originalMessageId: data.emailMetadata ? data.emailMetadata.originalMessageId : 'unknown',
+    originalRecipients: data.originalRecipients.join(", "),
+    forwardingTo: data.recipients.join(", ")
   });
 
   try {
     const result = await data.ses.send(new SendEmailCommand(params));
     data.log({
       level: "info",
-      message: "SendEmailCommand() successful.",
-      result: result
+      message: "Email sent successfully",
+      originalFrom: data.emailMetadata ? data.emailMetadata.originalFrom : 'unknown',
+      originalSubject: data.emailMetadata ? data.emailMetadata.originalSubject : 'unknown',
+      messageId: result.MessageId
     });
     return data;
   } catch (err) {
     data.log({
       level: "error",
-      message: "SendEmailCommand() returned error.",
-      error: err,
+      message: "Email sending failed",
+      originalFrom: data.emailMetadata ? data.emailMetadata.originalFrom : 'unknown',
+      originalSubject: data.emailMetadata ? data.emailMetadata.originalSubject : 'unknown',
+      error: err.message,
       stack: err.stack
     });
-    throw new Error('Error: Email sending failed.');
+    throw new Error('Email sending failed');
   }
 };
 
@@ -316,6 +355,7 @@ exports.sendMessage = async function (data) {
 exports.handler = async function (event, context) {
   // Support overrides through context for testing purposes
   var overrides = context && context.overrides ? context.overrides : undefined;
+
   var steps = overrides && overrides.steps ? overrides.steps :
     [
       exports.parseEvent,
@@ -324,49 +364,53 @@ exports.handler = async function (event, context) {
       exports.processMessage,
       exports.sendMessage
     ];
+
   var data = {
     event: event,
     context: context,
     config: overrides && overrides.config ? overrides.config : defaultConfig,
     log: overrides && overrides.log ? overrides.log : console.log,
     ses: overrides && overrides.ses ? overrides.ses : new SESv2Client(),
-    s3: overrides && overrides.s3 ?
-      overrides.s3 : new S3Client({ signatureVersion: 'v4' })
+    s3: overrides && overrides.s3 ? overrides.s3 : new S3Client()
   };
-  try {
-    const result = await Promise.series(steps, data);
-    if (result === null) {
-      // No recipients found, processing stopped early
-      return;
-    }
-    data.log({
-      level: "info",
-      message: "Process finished successfully."
-    });
-  } catch (err) {
-    data.log({
-      level: "error",
-      message: "Step returned error: " + err.message,
-      error: err,
-      stack: err.stack
-    });
-    throw new Error("Error: Step returned error.");
-  }
-};
 
-Promise.series = function (promises, initValue) {
-  return promises.reduce(function (chain, promise) {
-    if (typeof promise !== 'function') {
-      return chain.then(() => {
-        throw new Error("Error: Invalid promise item: " + promise);
+  try {
+    for (const step of steps) {
+      if (typeof step !== "function") {
+        throw new Error("Error: Invalid step item: " + step);
+      }
+
+      data = await step(data);
+
+      // Allow transformRecipients (or any step) to short-circuit cleanly.
+      if (data === null || (data && data._skip)) {
+        break;
+      }
+    }
+
+    // Successful completion: return void
+    if (data && data.log) {
+      data.log({
+        level: "info",
+        message: data && data._skip
+          ? "Process finished successfully (skipped: no matching recipients)."
+          : (data === null
+              ? "Process finished successfully (skipped: no matching recipients)."
+              : "Process finished successfully.")
       });
     }
-    return chain.then(function(result) {
-      // Stop processing if result is null (no recipients case)
-      if (result === null) {
-        return null;
-      }
-      return promise(result);
-    });
-  }, Promise.resolve(initValue));
+
+    return;
+  } catch (err) {
+    if (data && data.log) {
+      data.log({
+        level: "error",
+        message: "Step returned error: " + (err && err.message ? err.message : String(err)),
+        error: err,
+        stack: err && err.stack
+      });
+    }
+    // Propagate original error so the invocation is marked as failed.
+    throw err;
+  }
 };
