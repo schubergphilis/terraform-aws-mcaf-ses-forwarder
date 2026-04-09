@@ -91,7 +91,8 @@ module "lambda" {
   timeout                = 30
 
   execution_role = {
-    policy = data.aws_iam_policy_document.lambda_policy.json
+    create_policy = true
+    policy        = data.aws_iam_policy_document.lambda_policy.json
   }
 
   environment = {
