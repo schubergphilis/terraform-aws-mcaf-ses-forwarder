@@ -44,4 +44,9 @@ resource "aws_ses_receipt_rule" "default" {
     invocation_type = "Event"
     position        = 2
   }
+
+  depends_on = [
+    module.lambda,
+    module.s3_bucket,
+  ]
 }
